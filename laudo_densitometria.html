@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Laudo – Densitometria Óssea</title>
+<style>
+  :root{
+    --bg:#f4f5f7; --card:#fff; --ink:#1d2433; --muted:#6b7385; --line:#dde1e8;
+    --accent:#1f5fae; --accent-soft:#e7effa;
+    --ok:#1f8a4c; --ok-soft:#e5f5ec;
+    --warn:#b7791f; --warn-soft:#fdf3e1;
+    --bad:#c53030; --bad-soft:#fde8e8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+  header{background:var(--card);border-bottom:1px solid var(--line);padding:12px 20px;display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+  header h1{font-size:17px;margin:0;font-weight:600}
+  .toggles{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .toggles .sep{width:1px;height:24px;background:var(--line);margin:0 6px}
+  .tg{border:1.5px solid var(--line);background:#fff;color:var(--muted);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;user-select:none}
+  .tg.on{border-color:var(--accent);background:var(--accent);color:#fff}
+  .tg.cmp.on{background:#5b3fa8;border-color:#5b3fa8}
+  main{display:grid;grid-template-columns:minmax(380px,520px) 1fr;gap:18px;padding:18px 20px;align-items:start}
+  @media (max-width:900px){main{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+  .card h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+  .row{display:grid;grid-template-columns:96px 74px 1fr;gap:8px;align-items:center;padding:5px 0}
+  .row.sub label{color:var(--muted);padding-left:10px}
+  .row label{font-weight:600}
+  input.num{width:100%;padding:7px 8px;border:1.5px solid var(--line);border-radius:7px;font-size:15px;text-align:center;font-variant-numeric:tabular-nums}
+  input.num:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .chips{display:flex;gap:4px;flex-wrap:wrap}
+  .chip{border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:6px;padding:5px 9px;font-size:12px;cursor:pointer;user-select:none}
+  .chip.on[data-c="N"]{background:var(--ok-soft);border-color:var(--ok);color:var(--ok);font-weight:600}
+  .chip.on[data-c="OPN"]{background:var(--warn-soft);border-color:var(--warn);color:var(--warn);font-weight:600}
+  .chip.on[data-c="OPR"]{background:var(--bad-soft);border-color:var(--bad);color:var(--bad);font-weight:600}
+  .chip.on.dir{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+  .chip.on.sig{background:#efe9fb;border-color:#5b3fa8;color:#5b3fa8;font-weight:600}
+  .subhint{font-size:11.5px;color:var(--muted);margin:8px 0 2px}
+  .cmpbox{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
+  .cmpbox .row{grid-template-columns:96px 74px 1fr}
+  .hidden{display:none!important}
+  .preview{position:sticky;top:14px}
+  .preview .bar{display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+  #copy{background:var(--accent);color:#fff;border:0;border-radius:9px;padding:12px 22px;font-size:15px;font-weight:700;cursor:pointer;min-width:200px}
+  #copy:hover{filter:brightness(1.08)}
+  #copy.done{background:var(--ok)}
+  #reset{background:#fff;border:1.5px solid var(--line);border-radius:9px;padding:11px 16px;font-size:14px;cursor:pointer;color:var(--muted)}
+  .kbd{font-size:11.5px;color:var(--muted)}
+  #out{font-family:Arial,Helvetica,sans-serif;line-height:1.45;margin:0;max-height:calc(100vh - 190px);overflow:auto;border:1px solid var(--line);border-radius:8px;padding:14px 18px}
+  #copysrc{background:#fff;border:1.5px solid var(--line);border-radius:9px;padding:11px 14px;font-size:13px;cursor:pointer;color:var(--ink)}
+  #copysrc.done{border-color:var(--ok);color:var(--ok)}
+  #out mark{background:#fde2e2;color:var(--bad);font-weight:700;border-radius:3px;padding:0 2px}
+  #warn{background:var(--bad-soft);color:var(--bad);border-radius:8px;padding:8px 12px;font-size:13px;margin-bottom:10px}
+  #warn:empty{display:none}
+  .legend{font-size:11.5px;color:var(--muted);margin-top:6px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Densitometria Óssea · gerador de laudo</h1>
+  <div class="toggles">
+    <span class="tg on" data-seg="coluna">Coluna</span>
+    <span class="tg on" data-seg="femur">Fêmur</span>
+    <span class="tg" data-seg="antebraco">Antebraço</span>
+    <span class="sep"></span>
+    <span class="tg cmp" id="tgcmp">Tem exame anterior</span>
+  </div>
+</header>
+
+<main>
+  <section id="form"></section>
+
+  <section class="preview">
+    <div class="card">
+      <div class="bar">
+        <button id="copy" type="button">📋 Copiar laudo</button>
+        <button id="copysrc" type="button" class="sec">&lt;/&gt; Copiar código HTML</button>
+        <button id="reset" type="button">Novo laudo</button>
+        <span class="kbd">Atalho: <b>Ctrl+Enter</b> copia · <b>Enter</b> pula para o próximo campo</span>
+      </div>
+      <div id="warn"></div>
+      <div id="out"></div>
+    </div>
+  </section>
+</main>
+
+<textarea id="clip" style="position:fixed;left:-9999px;top:0" aria-hidden="true"></textarea>
+
+<script>
+// ---------------- TEXTO FIXO DO TEMPLATE ----------------
+const HEADER = [
+"DENSITOMETRIA ÓSSEA",
+"",
+"METODOLOGIA DE ANÁLISE E TÉCNICA",
+"Exame realizado com técnica de absorção de fótons gerados por tubo de Raios-x com dois níveis de energia (DPX). Estudo realizado em equipamento Lunar, modelo DPX-MD+.A conclusão do exame é baseada em tabela recomendada pela Sociedade Brasileira de Densitometria Óssea, padronizada com dados fornecidos pela Organização Mundial de Saúde. A tabela é dividida em quatro grupos conforme os valores de desvio-padrão (dp) em relação a população de indivíduos jovens:",
+"",
+"FAIXA NORMAL: até -1,0 dp",
+"FAIXA DE OSTEOPENIA: entre -1,0 e -2,5 dp",
+"FAIXA DE OSTEOPOROSE: abaixo de -2,5 dp",
+"FAIXA DE OSTEOPOROSE ACENTUADA: abaixo de - 2,5 dp associado a história pregressa de fratura.",
+"OBSERVAÇÃO: Os valores de densidade mineral óssea encontrados devem ser analisados considerando-se o contexto clínico global de cada paciente."
+].join("\n");
+
+// ---------------- SEGMENTOS ----------------
+const SEGS = [
+  { id:"coluna", title:"Coluna lombar",
+    main:{id:"L14", label:"L1-L4", name:"VÉRTEBRAS LOMBARES L1-L4"},
+    subs:[{id:"L1",label:"L1",name:"VÉRTEBRA LOMBAR L1"},{id:"L2",label:"L2",name:"VÉRTEBRA LOMBAR L2"},{id:"L3",label:"L3",name:"VÉRTEBRA LOMBAR L3"},{id:"L4",label:"L4",name:"VÉRTEBRA LOMBAR L4"}],
+    subhint:"Destaque de vértebras: preencha só as alteradas (vazio = não aparece no laudo)",
+    cmpEnd:"no segmento lombar L1-L4" },
+  { id:"femur", title:"Fêmur",
+    main:{id:"FT", label:"Fêmur total", name:"FÊMUR TOTAL"},
+    subs:[{id:"COLO",label:"Colo",name:"COLO DO FÊMUR"}],
+    subhint:"Colo do fêmur: preencha só se alterado (vazio = não aparece no laudo)",
+    cmpEnd:"no fêmur total" },
+  { id:"antebraco", title:"Antebraço",
+    main:{id:"R33", label:"Rádio 33%", name:"RÁDIO 33%"},
+    subs:[], cmpEnd:"no antebraço" }
+];
+const CLS = [["N","Normal"],["OPN","Osteopenia"],["OPR","Osteoporose"]];
+const segOn = {coluna:true, femur:true, antebraco:false};
+let cmpOn = false;
+
+// ---------------- MONTAGEM DO FORMULÁRIO ----------------
+const form = document.getElementById("form");
+function rowHTML(r, isSub){
+  return `<div class="row${isSub?" sub":""}" data-row="${r.id}" data-sub="${isSub?1:0}">
+    <label for="in_${r.id}">${r.label}</label>
+    <input class="num dp" id="in_${r.id}" inputmode="decimal" autocomplete="off" placeholder="dp">
+    <div class="chips">${CLS.map(([c,t])=>`<span class="chip${c==="N"?" on":""}" data-c="${c}">${t}</span>`).join("")}</div>
+  </div>`;
+}
+SEGS.forEach(s=>{
+  const card = document.createElement("div");
+  card.className = "card seg";
+  card.dataset.seg = s.id;
+  card.innerHTML = `<h2>${s.title}</h2>
+    ${rowHTML(s.main,false)}
+    ${s.subs.length?`<div class="subhint">${s.subhint}</div>`+s.subs.map(r=>rowHTML(r,true)).join(""):""}
+    <div class="cmpbox hidden" data-cmp="${s.id}">
+      <div class="row">
+        <label for="pc_${s.id}">Comparativo</label>
+        <input class="num pct" id="pc_${s.id}" inputmode="decimal" autocomplete="off" placeholder="%">
+        <div class="chips">
+          <span class="chip dir" data-d="G">Ganho</span><span class="chip dir" data-d="P">Perda</span>
+          &nbsp;
+          <span class="chip sig" data-s="S">Significativo</span><span class="chip sig" data-s="NS">Não signif.</span>
+        </div>
+      </div>
+      <div class="legend">Digite a variação com sinal (ex.: <b>-2,3</b> = perda; <b>3,1</b> = ganho). Vazio = sem comparativo neste segmento.</div>
+    </div>`;
+  form.appendChild(card);
+});
+
+// ---------------- UTILITÁRIOS ----------------
+function parseNum(raw){
+  const n = parseFloat(String(raw).trim().replace(",", "."));
+  return isNaN(n) ? null : n;
+}
+function fmtAbs(raw){ // "-1.8" -> "1,8" ; "2" -> "2,0"
+  let s = String(raw).trim().replace(/^[+-]\s*/,"").replace(".", ",");
+  if(!/,/.test(s)) s += ",0";
+  if(/,$/.test(s)) s += "0";
+  return s;
+}
+function autoCls(raw){
+  const n = parseNum(raw);
+  if(n===null) return "N";
+  const a = Math.abs(n);
+  if(a >= 2.5) return "OPR";
+  if(a > 1.0) return "OPN";
+  return "N";
+}
+function setChip(container, attr, val){
+  container.querySelectorAll(`[data-${attr}]`).forEach(c=>c.classList.toggle("on", c.dataset[attr]===val));
+}
+function getChip(container, attr){
+  const c = container.querySelector(`[data-${attr}].on`);
+  return c ? c.dataset[attr] : null;
+}
+
+// ---------------- EVENTOS ----------------
+form.addEventListener("input", e=>{
+  const t = e.target;
+  if(t.classList.contains("dp")){
+    const row = t.closest(".row");
+    setChip(row, "c", autoCls(t.value));
+  } else if(t.classList.contains("pct")){
+    const row = t.closest(".row");
+    const n = parseNum(t.value);
+    if(n===null) { setChip(row,"d",null); }
+    else setChip(row, "d", (n<0 || /^\s*-/.test(t.value)) ? "P" : "G");
+  }
+  render();
+});
+form.addEventListener("click", e=>{
+  const c = e.target.closest(".chip");
+  if(!c) return;
+  const row = c.closest(".row");
+  if(c.dataset.c) setChip(row,"c",c.dataset.c);
+  if(c.dataset.d) setChip(row,"d",c.dataset.d);
+  if(c.dataset.s) setChip(row,"s",c.dataset.s);
+  render();
+});
+document.querySelectorAll(".tg[data-seg]").forEach(tg=>{
+  tg.addEventListener("click", ()=>{
+    segOn[tg.dataset.seg] = !segOn[tg.dataset.seg];
+    tg.classList.toggle("on", segOn[tg.dataset.seg]);
+    applyVisibility(); render();
+  });
+});
+document.getElementById("tgcmp").addEventListener("click", e=>{
+  cmpOn = !cmpOn; e.currentTarget.classList.toggle("on", cmpOn);
+  applyVisibility(); render();
+});
+// Enter = próximo campo; Ctrl+Enter = copiar
+document.addEventListener("keydown", e=>{
+  if(e.key==="Enter" && (e.ctrlKey||e.metaKey)){ e.preventDefault(); copy(); return; }
+  if(e.key==="Enter" && e.target.matches("input.num")){
+    e.preventDefault();
+    const inputs = [...document.querySelectorAll("input.num")].filter(i=>i.offsetParent!==null);
+    const i = inputs.indexOf(e.target);
+    if(i>=0 && i<inputs.length-1) inputs[i+1].focus(); else document.getElementById("copy").focus();
+  }
+});
+
+function applyVisibility(){
+  document.querySelectorAll(".card.seg").forEach(c=>c.classList.toggle("hidden", !segOn[c.dataset.seg]));
+  document.querySelectorAll(".cmpbox").forEach(b=>b.classList.toggle("hidden", !cmpOn));
+}
+
+// ---------------- GERAÇÃO DO LAUDO ----------------
+// Cada linha = lista de partes {t:texto, b:negrito, ph:pendência}
+const T=t=>({t,b:false}), B=t=>({t,b:true}), P=t=>({t,b:true,ph:true});
+const BLANK={parts:[]};
+const HEAD_ITEMS = [
+  {parts:[B("DENSITOMETRIA ÓSSEA")], center:true},
+  BLANK, BLANK,
+  {parts:[B("METODOLOGIA DE ANÁLISE E TÉCNICA")]},
+  {parts:[T(HEADER.split("\n")[3])]},
+  BLANK,
+  ...HEADER.split("\n").slice(5,9).map(l=>({parts:[T(l)]})),
+  {parts:[B(HEADER.split("\n")[9])]},
+  BLANK, BLANK
+];
+function sentence(name, row){
+  const cls = getChip(row,"c");
+  if(cls==="N") return {parts:[T(name+" com "), B("valores densitométricos normais"), T(".")]};
+  const raw = row.querySelector(".dp").value;
+  const val = parseNum(raw)===null ? P("XX") : B(fmtAbs(raw));
+  const diag = cls==="OPN" ? "osteopenia" : "osteoporose";
+  return {parts:[T(name+" com "), B(diag+" densitométrica"), T(" por apresentar "), val,
+                 T(" desvios padrão abaixo da média em relação ao adulto jovem.")]};
+}
+function cmpSentence(seg){
+  const box = document.querySelector(`.cmpbox[data-cmp="${seg.id}"] .row`);
+  const raw = box.querySelector(".pct").value;
+  if(parseNum(raw)===null) return null;
+  const d = getChip(box,"d") || "G";
+  const s = getChip(box,"s");
+  let tipo;
+  if(!s) tipo = [B(d==="G"?"ganho ":"perda "), P("significativo?")];
+  else if(d==="G") tipo = [B(s==="S" ? "ganho significativo" : "ganho não significativo")];
+  else tipo = [B(s==="S" ? "perda significativa" : "perda não significativa")];
+  return {parts:[T("Em relação ao estudo anterior houve "), ...tipo, T(" no estudo atual de "),
+                 B(fmtAbs(raw)+"%"), T(" "+seg.cmpEnd+".")]};
+}
+function build(){
+  const items = [...HEAD_ITEMS];
+  let first = true;
+  SEGS.forEach(seg=>{
+    if(!segOn[seg.id]) return;
+    if(!first){ items.push(BLANK, BLANK); }
+    first = false;
+    const card = document.querySelector(`.card.seg[data-seg="${seg.id}"]`);
+    items.push(sentence(seg.main.name, card.querySelector(`[data-row="${seg.main.id}"]`)));
+    seg.subs.forEach(sub=>{
+      const row = card.querySelector(`[data-row="${sub.id}"]`);
+      if(getChip(row,"c")!=="N") items.push(sentence(sub.name, row));
+    });
+    if(cmpOn){
+      const c = cmpSentence(seg);
+      if(c) items.push(BLANK, c);
+    }
+  });
+  items.push(BLANK);
+  return items;
+}
+function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function toEntities(s){return s.replace(/[ -￿]/g, c=>"&#"+c.charCodeAt(0)+";");}
+function toHTML(items, preview){
+  return items.map(it=>{
+    const inner = it.parts.length ? it.parts.map(p=>{
+      let t = esc(p.ph ? "["+p.t+"]" : p.t);
+      if(p.ph && preview) return `<mark>${t}</mark>`;
+      return p.b ? `<strong>${t}</strong>` : t;
+    }).join("") : "&nbsp;";
+    return `<div${it.center?' style="text-align: center;"':""}><span style="font-size: 11pt;">${inner}</span></div>`;
+  }).join("\n");
+}
+function toText(items){
+  return items.map(it=>it.parts.map(p=>p.ph?"["+p.t+"]":p.t).join("")).join("\n");
+}
+function render(){
+  const items = build();
+  document.getElementById("out").innerHTML = toHTML(items, true);
+  const txt = toText(items);
+  const warns = [];
+  if(!Object.values(segOn).some(Boolean)) warns.push("Nenhum segmento selecionado.");
+  if(/\[XX\]/.test(txt)) warns.push("Há osteopenia/osteoporose marcada sem valor de desvio.");
+  if(/\[significativo\?\]/.test(txt)) warns.push("Defina se a variação no comparativo é significativa.");
+  document.getElementById("warn").textContent = warns.join("  ");
+}
+
+// ---------------- COPIAR / RESET ----------------
+function flash(id, label){
+  const b = document.getElementById(id);
+  b.classList.add("done"); b.textContent = "✔ Copiado!";
+  setTimeout(()=>{ b.classList.remove("done"); b.textContent = label; }, 1800);
+}
+function copyViaEvent(html, txt){
+  const h = e=>{ e.preventDefault(); if(html) e.clipboardData.setData("text/html", html); e.clipboardData.setData("text/plain", txt); };
+  document.addEventListener("copy", h, {once:true});
+  const ok = document.execCommand("copy");
+  document.removeEventListener("copy", h);
+  return ok;
+}
+async function copy(){
+  const items = build();
+  const html = toEntities(toHTML(items, false));
+  const txt = toText(items);
+  try{
+    if(navigator.clipboard && window.ClipboardItem && window.isSecureContext){
+      await navigator.clipboard.write([new ClipboardItem({
+        "text/html": new Blob([html], {type:"text/html"}),
+        "text/plain": new Blob([txt], {type:"text/plain"})
+      })]);
+    } else if(!copyViaEvent(html, txt)) throw 0;
+    flash("copy","📋 Copiar laudo");
+  }catch(e){
+    if(copyViaEvent(html, txt)) flash("copy","📋 Copiar laudo");
+    else alert("Não foi possível copiar automaticamente.");
+  }
+}
+function copySource(){
+  const src = toEntities(toHTML(build(), false));
+  if(copyViaEvent(null, src)) flash("copysrc","</> Copiar código HTML");
+}
+document.getElementById("copy").addEventListener("click", copy);
+document.getElementById("copysrc").addEventListener("click", copySource);
+document.getElementById("reset").addEventListener("click", ()=>{
+  document.querySelectorAll("input.num").forEach(i=>i.value="");
+  document.querySelectorAll(".card.seg .row[data-row]").forEach(r=>setChip(r,"c","N"));
+  document.querySelectorAll(".cmpbox .row").forEach(r=>{setChip(r,"d",null);setChip(r,"s",null);});
+  render();
+  const first = [...document.querySelectorAll("input.dp")].find(i=>i.offsetParent!==null);
+  if(first) first.focus();
+});
+
+applyVisibility(); render();
+document.getElementById("in_L14").focus();
+</script>
+</body>
+</html>
