@@ -145,12 +145,12 @@ SEGS.forEach(s=>{
         <label for="pc_${s.id}">Comparativo</label>
         <input class="num pct" id="pc_${s.id}" inputmode="decimal" autocomplete="off" placeholder="%">
         <div class="chips">
-          <span class="chip dir" data-d="G">Ganho</span><span class="chip dir" data-d="P">Perda</span>
+          <span class="chip dir" data-d="G">Ganho</span><span class="chip dir" data-d="P">Perda</span><span class="chip dir" data-d="E">Sem variação</span>
           &nbsp;
           <span class="chip sig" data-s="S">Significativo</span><span class="chip sig" data-s="NS">Não signif.</span>
         </div>
       </div>
-      <div class="legend">Digite a variação com sinal (ex.: <b>-2,3</b> = perda; <b>3,1</b> = ganho). Vazio = sem comparativo neste segmento.</div>
+      <div class="legend">Digite a variação com sinal (ex.: <b>-2,3</b> = perda; <b>3,1</b> = ganho). <b>Sem variação</b> = "não houve nem ganho nem perda" (não precisa de %). Vazio = sem comparativo neste segmento.</div>
     </div>`;
   form.appendChild(card);
 });
@@ -192,7 +192,7 @@ form.addEventListener("input", e=>{
     const row = t.closest(".row");
     const n = parseNum(t.value);
     if(n===null) { setChip(row,"d",null); }
-    else setChip(row, "d", (n<0 || /^\s*-/.test(t.value)) ? "P" : "G");
+    else setChip(row, "d", n===0 ? "E" : (n<0 || /^\s*-/.test(t.value)) ? "P" : "G");
   }
   render();
 });
@@ -258,6 +258,8 @@ function sentence(name, row){
 function cmpSentence(seg){
   const box = document.querySelector(`.cmpbox[data-cmp="${seg.id}"] .row`);
   const raw = box.querySelector(".pct").value;
+  if(getChip(box,"d")==="E")
+    return {parts:[T("Não houve "), B("nem ganho nem perda"), T(" na comparação com exame anterior.")]};
   if(parseNum(raw)===null) return null;
   const d = getChip(box,"d") || "G";
   const s = getChip(box,"s");
